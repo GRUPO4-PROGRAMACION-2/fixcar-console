@@ -5,18 +5,14 @@ import java.io.Serializable;
 public class Vehiculo implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // Atributos privados  
     private String placa;
     private String marca;
     private String modelo;
-    private String cliente;
+    private Cliente cliente;
 
-    public Vehiculo() {
-    }
-
-    // Constructor con parámetros
-    public Vehiculo(String placa, String marca, String modelo, String cliente) {
-        setPlaca(placa); // Usa el setter para aplicar la validación
+    // Constructor con parámetros 
+    public Vehiculo(String placa, String marca, String modelo, Cliente cliente) {
+        setPlaca(placa); // Aplica la validación de placa no nula/vacía
         this.marca = marca;
         this.modelo = modelo;
         this.cliente = cliente;
@@ -51,11 +47,11 @@ public class Vehiculo implements Serializable {
         this.modelo = modelo;
     }
 
-    public String getCliente() {
+    public Cliente getCliente() {
         return cliente;
     }
 
-    public void setCliente(String cliente) {
+    public void setCliente(Cliente cliente) {
         this.cliente = cliente;
     }
 
@@ -65,7 +61,7 @@ public class Vehiculo implements Serializable {
                 "placa='" + placa + '\'' +
                 ", marca='" + marca + '\'' +
                 ", modelo='" + modelo + '\'' +
-                ", cliente='" + cliente + '\'' +
+                ", cliente=" + cliente +
                 '}';
     }
 }
