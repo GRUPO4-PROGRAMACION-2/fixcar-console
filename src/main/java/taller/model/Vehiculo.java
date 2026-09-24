@@ -10,11 +10,14 @@ public class Vehiculo implements Serializable {
     private String modelo;
     private Cliente cliente;
 
-    // Constructor con parámetros 
+    // Constructor con parámetros
     public Vehiculo(String placa, String marca, String modelo, Cliente cliente) {
         setPlaca(placa); // Aplica la validación de placa no nula/vacía
         this.marca = marca;
         this.modelo = modelo;
+        if (cliente == null) {
+            throw new IllegalArgumentException("El cliente es obligatorio y no puede ser nulo.");
+        }
         this.cliente = cliente;
     }
 
@@ -51,10 +54,12 @@ public class Vehiculo implements Serializable {
         return cliente;
     }
 
-    public void setCliente(Cliente cliente) {
+   public void setCliente(Cliente cliente) {
+        if (cliente == null) {
+            throw new IllegalArgumentException("El cliente es obligatorio y no puede ser nulo.");
+        }
         this.cliente = cliente;
     }
-
     @Override
     public String toString() {
         return "Vehiculo{" +
