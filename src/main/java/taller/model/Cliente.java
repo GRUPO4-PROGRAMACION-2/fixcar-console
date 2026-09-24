@@ -24,11 +24,22 @@ public class Cliente extends Persona {
     }
 
     public void setCorreo(String correo) {
-        if (correo == null || !correo.contains("@")) {
-            throw new IllegalArgumentException("El correo no es válido");
-        }
-        this.correo = correo.trim();
+    if (correo == null) {
+        throw new IllegalArgumentException("El correo no es válido");
     }
+    String limpio = correo.trim();
+    int arroba = limpio.indexOf('@');
+
+    // Debe haber un solo '@', con texto antes y texto después
+    boolean valido = arroba > 0
+            && arroba == limpio.lastIndexOf('@')
+            && arroba < limpio.length() - 1;
+
+    if (!valido) {
+        throw new IllegalArgumentException("El correo no es válido");
+    }
+    this.correo = limpio;
+}
 
     public String getDireccion() {
         return direccion;
