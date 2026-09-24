@@ -17,5 +17,5 @@
 
 ## Lista de listo
 - Los datos siguen disponibles después de reiniciar el programa.
-- Se justifica brevemente el uso de `ArrayList` por el tamaño pequeño del sistema.
+- Se usan `ArrayList` para conservar y consultar las listas de datos del taller.
 - El archivo se crea si aún no existe.
