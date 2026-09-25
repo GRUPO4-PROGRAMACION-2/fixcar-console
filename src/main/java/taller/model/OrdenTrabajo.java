@@ -11,6 +11,7 @@ public class OrdenTrabajo implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String id;
+    private String descripcion;
     private Cliente cliente;
     private Vehiculo vehiculo;
     private Trabajador trabajador;
@@ -18,9 +19,12 @@ public class OrdenTrabajo implements Serializable {
     private EstadoOrden estado;
     private LocalDateTime fechaCreacion;
 
-    public OrdenTrabajo(String id, Cliente cliente, Vehiculo vehiculo, Trabajador trabajador) {
+    public OrdenTrabajo(String id, String descripcion, Cliente cliente, Vehiculo vehiculo, Trabajador trabajador) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("El id de la orden no puede estar vacío");
+        }
+        if (descripcion == null || descripcion.isBlank()) {
+            throw new IllegalArgumentException("La descripción de la orden no puede estar vacía");
         }
         if (cliente == null) {
             throw new IllegalArgumentException("El cliente no puede ser nulo");
@@ -32,6 +36,7 @@ public class OrdenTrabajo implements Serializable {
             throw new IllegalArgumentException("El trabajador no puede ser nulo");
         }
         this.id = id.trim();
+        this.descripcion = descripcion.trim();
         this.cliente = cliente;
         this.vehiculo = vehiculo;
         this.trabajador = trabajador;
@@ -59,11 +64,18 @@ public class OrdenTrabajo implements Serializable {
         if (nuevoEstado == null) {
             throw new IllegalArgumentException("El estado no puede ser nulo");
         }
+        if (!estado.puedeCambiarA(nuevoEstado)) {
+            throw new IllegalStateException("No se permite cambiar el estado de " + estado + " a " + nuevoEstado);
+        }
         this.estado = nuevoEstado;
     }
 
     public String getId() {
         return id;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
     }
 
     public Cliente getCliente() {
