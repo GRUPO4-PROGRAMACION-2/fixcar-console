@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 public class TallerDAO {
 
@@ -88,6 +89,22 @@ public class TallerDAO {
         }
     }
 
+    /**
+     * Aplica una modificación mientras mantiene bloqueado el ciclo completo
+     * de lectura y escritura, evitando que operaciones concurrentes se pisen.
+     */
+    public void actualizarDatos(Consumer<TallerData> actualizacion) {
+        if (actualizacion == null) {
+            throw new IllegalArgumentException("La actualización no puede ser nula.");
+        }
+
+        synchronized (LOCK) {
+            TallerData datos = cargar();
+            actualizacion.accept(datos);
+            guardar(datos);
+        }
+    }
+
     private void crearArchivoSiNoExiste() {
 
         synchronized (LOCK) {
@@ -122,4 +139,3 @@ public class TallerDAO {
         }
     }
 }
-    

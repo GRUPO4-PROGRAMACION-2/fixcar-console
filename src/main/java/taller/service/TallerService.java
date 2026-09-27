@@ -26,18 +26,14 @@ public class TallerService {
         if (cliente == null) {
             throw new IllegalArgumentException("El cliente no puede ser nulo.");
         }
-        TallerData datos = tallerDAO.cargar();
-        datos.agregarCliente(cliente);
-        tallerDAO.guardar(datos);
+        tallerDAO.actualizarDatos(datos -> datos.agregarCliente(cliente));
     }
 
     public void registrarVehiculo(Vehiculo vehiculo) {
         if (vehiculo == null) {
             throw new IllegalArgumentException("El vehículo no puede ser nulo.");
         }
-        TallerData datos = tallerDAO.cargar();
-        datos.agregarVehiculo(vehiculo);
-        tallerDAO.guardar(datos);
+        tallerDAO.actualizarDatos(datos -> datos.agregarVehiculo(vehiculo));
     }
 
     //gestión de órdenes de trabajo
@@ -46,9 +42,7 @@ public class TallerService {
         if (orden == null) {
             throw new IllegalArgumentException("La orden de trabajo no puede ser nula.");
         }
-        TallerData datos = tallerDAO.cargar();
-        datos.agregarOrden(orden);
-        tallerDAO.guardar(datos);
+        tallerDAO.actualizarDatos(datos -> datos.agregarOrden(orden));
     }
 
     public List<OrdenTrabajo> listarOrdenes() {
@@ -74,19 +68,16 @@ public class TallerService {
             throw new IllegalArgumentException("El nuevo estado no puede ser nulo.");
         }
 
-        TallerData datos = tallerDAO.cargar();
-        List<OrdenTrabajo> ordenes = datos.getOrdenes();
+        String idNormalizado = idOrden.trim();
+        tallerDAO.actualizarDatos(datos -> {
+            OrdenTrabajo ordenEncontrada = datos.getOrdenes().stream()
+                    .filter(orden -> orden.getId().equals(idNormalizado))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No se encontró la orden con ID: " + idOrden));
 
-        OrdenTrabajo ordenEncontrada = ordenes.stream()
-                .filter(o -> o.getId().equals(idOrden.trim()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No se encontró la orden con ID: " + idOrden));
-
-        //aplica la validación interna de la orden
-        ordenEncontrada.cambiarEstado(nuevoEstado);
-
-        //Persiste el cambio
-        tallerDAO.guardar(datos);
+            ordenEncontrada.cambiarEstado(nuevoEstado);
+        });
     }
 
     //MÉTODO ACORDADO CON T10 (Procesar Diagnóstico) 
