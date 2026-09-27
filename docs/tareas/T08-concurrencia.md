@@ -18,4 +18,4 @@
 ## Terminado cuando
 - Se pueden encolar varias órdenes reales y procesarlas sin bloquear el menú.
 - El guardado concurrente no daña `taller.dat`.
-- La justificación técnica se incluye en el informe del avance.
+- El procesamiento usa órdenes reales del taller; no crea hilos solo para demostrar `Thread`.
