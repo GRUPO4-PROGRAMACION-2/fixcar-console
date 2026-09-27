@@ -1,7 +1,7 @@
 # T10 — Consola y arranque
 - **Prioridad:** 10
-- **Estado:** Disponible
-- **Responsable:** [nombre / usuario de GitHub]
+- **Estado:** En Progreso
+- **Responsable:** [Edgar Gomez / edgargoguz-cmd]
 - **Rama:** `feature/consola`
 - **Depende de:** T01 y T09
 
