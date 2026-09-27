@@ -15,9 +15,13 @@ public class OrdenTrabajo implements Serializable {
     private Cliente cliente;
     private Vehiculo vehiculo;
     private Trabajador trabajador;
-    private List<Servicio> servicios;
+    // Se declara como ArrayList (y no como List) porque es el tipo que
+    // Java necesita reconstruir al leer la orden de taller.dat.
+    private ArrayList<Servicio> servicios;
     private EstadoOrden estado;
     private LocalDateTime fechaCreacion;
+    private String diagnostico;
+    private LocalDateTime fechaDiagnostico;
 
     public OrdenTrabajo(String id, String descripcion, Cliente cliente, Vehiculo vehiculo, Trabajador trabajador) {
         if (id == null || id.isBlank()) {
@@ -70,6 +74,28 @@ public class OrdenTrabajo implements Serializable {
         this.estado = nuevoEstado;
     }
 
+    /**
+     * Guarda el resultado del diagnóstico técnico de la orden y la deja
+     * lista para la reparación (EN_PROCESO).
+     *
+     * El estado no se cambia con un setter público: el propio modelo decide
+     * que solo una orden pendiente puede pasar por diagnóstico, y el texto
+     * nunca puede llegar vacío.
+     */
+    public void registrarDiagnostico(String textoDiagnostico) {
+        if (textoDiagnostico == null || textoDiagnostico.isBlank()) {
+            throw new IllegalArgumentException("El diagnóstico no puede estar vacío");
+        }
+        if (estado != EstadoOrden.PENDIENTE) {
+            throw new IllegalStateException(
+                    "Solo una orden PENDIENTE puede registrar su diagnóstico; la orden está en " + estado);
+        }
+
+        this.diagnostico = textoDiagnostico.trim();
+        this.fechaDiagnostico = LocalDateTime.now();
+        cambiarEstado(EstadoOrden.EN_PROCESO);
+    }
+
     public String getId() {
         return id;
     }
@@ -100,6 +126,19 @@ public class OrdenTrabajo implements Serializable {
 
     public LocalDateTime getFechaCreacion() {
         return fechaCreacion;
+    }
+
+    /** Texto del diagnóstico técnico, o null si la orden todavía no se ha diagnosticado. */
+    public String getDiagnostico() {
+        return diagnostico;
+    }
+
+    public LocalDateTime getFechaDiagnostico() {
+        return fechaDiagnostico;
+    }
+
+    public boolean fueDiagnosticada() {
+        return diagnostico != null;
     }
 
     @Override

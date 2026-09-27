@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
 public class TallerDAO {
@@ -65,12 +67,24 @@ public class TallerDAO {
 
         synchronized (LOCK) {
 
+            Path archivoTemporal = null;
+
             try {
 
                 Files.createDirectories(ARCHIVO.getParent());
 
+                // Primero se escribe en un archivo temporal y al final se
+                // reemplaza taller.dat. Si el programa se interrumpe a mitad de
+                // la escritura, el archivo anterior queda intacto en lugar de
+                // quedar un taller.dat dañado que no se puede leer después.
+                archivoTemporal = Files.createTempFile(
+                        ARCHIVO.getParent(),
+                        "taller",
+                        ".tmp"
+                );
+
                 try (
-                        OutputStream salida = Files.newOutputStream(ARCHIVO);
+                        OutputStream salida = Files.newOutputStream(archivoTemporal);
                         ObjectOutputStream objetoSalida =
                                 new ObjectOutputStream(salida)
                 ) {
@@ -79,13 +93,46 @@ public class TallerDAO {
                     objetoSalida.flush();
                 }
 
+                reemplazarArchivo(archivoTemporal);
+                archivoTemporal = null;
+
             } catch (IOException e) {
 
                 throw new RuntimeException(
                         "No se pudieron guardar los datos del taller.",
                         e
                 );
+
+            } finally {
+
+                // Si algo falló, el temporal no se deja abandonado en data/.
+                if (archivoTemporal != null) {
+                    try {
+                        Files.deleteIfExists(archivoTemporal);
+                    } catch (IOException ignorada) {
+                        // No afecta la operación ya fallida.
+                    }
+                }
             }
+        }
+    }
+
+    /** Renombra el temporal sobre taller.dat, de forma atómica si el sistema la admite. */
+    private void reemplazarArchivo(Path archivoTemporal) throws IOException {
+
+        try {
+            Files.move(
+                    archivoTemporal,
+                    ARCHIVO,
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE
+            );
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(
+                    archivoTemporal,
+                    ARCHIVO,
+                    StandardCopyOption.REPLACE_EXISTING
+            );
         }
     }
 
@@ -109,33 +156,13 @@ public class TallerDAO {
 
         synchronized (LOCK) {
 
-            try {
-
-                Files.createDirectories(ARCHIVO.getParent());
-
-                if (!Files.exists(ARCHIVO)) {
-
-                    TallerData datos = new TallerData();
-
-                    try (
-                            OutputStream salida =
-                                    Files.newOutputStream(ARCHIVO);
-                            ObjectOutputStream objetoSalida =
-                                    new ObjectOutputStream(salida)
-                    ) {
-
-                        objetoSalida.writeObject(datos);
-                        objetoSalida.flush();
-                    }
-                }
-
-            } catch (IOException e) {
-
-                throw new RuntimeException(
-                        "No se pudo crear el archivo de datos.",
-                        e
-                );
+            if (Files.exists(ARCHIVO)) {
+                return;
             }
+
+            // Se reutiliza guardar() para que el primer taller.dat se cree con
+            // el mismo mecanismo (escritura temporal + reemplazo) que el resto.
+            guardar(new TallerData());
         }
     }
 }

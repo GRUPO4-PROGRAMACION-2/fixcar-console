@@ -6,15 +6,25 @@ import taller.model.Vehiculo;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+/**
+ * Contenedor de datos del taller (T06).
+ *
+ * Se serializa completo dentro de taller.dat, por eso guarda directamente las
+ * listas que Java necesita poder reconstruir al leer el archivo. Las listas
+ * internas nunca se entregan tal cual: las consultas devuelven copias de solo
+ * lectura para que nadie modifique los datos por fuera de la capa de servicio.
+ */
 public class TallerData implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private ArrayList<Cliente> clientes;
-    private ArrayList<Vehiculo> vehiculos;
-    private ArrayList<OrdenTrabajo> ordenes;
+    private final ArrayList<Cliente> clientes;
+    private final ArrayList<Vehiculo> vehiculos;
+    private final ArrayList<OrdenTrabajo> ordenes;
 
     public TallerData() {
         clientes = new ArrayList<>();
@@ -22,17 +32,7 @@ public class TallerData implements Serializable {
         ordenes = new ArrayList<>();
     }
 
-    public ArrayList<Cliente> getClientes() {
-        return clientes;
-    }
-
-    public ArrayList<Vehiculo> getVehiculos() {
-        return vehiculos;
-    }
-
-    public ArrayList<OrdenTrabajo> getOrdenes() {
-        return ordenes;
-    }
+    // ========== Altas (solo las usa TallerService a través del DAO) ==========
 
     public void agregarCliente(Cliente cliente) {
         if (cliente == null) {
@@ -58,15 +58,55 @@ public class TallerData implements Serializable {
         ordenes.add(orden);
     }
 
+    // ========== Consultas: copias inmutables de la información ==========
+
     public List<Cliente> consultarClientes() {
-        return new ArrayList<>(clientes);
+        return Collections.unmodifiableList(new ArrayList<>(clientes));
     }
 
     public List<Vehiculo> consultarVehiculos() {
-        return new ArrayList<>(vehiculos);
+        return Collections.unmodifiableList(new ArrayList<>(vehiculos));
     }
 
     public List<OrdenTrabajo> consultarOrdenes() {
-        return new ArrayList<>(ordenes);
+        return Collections.unmodifiableList(new ArrayList<>(ordenes));
+    }
+
+    // ========== Búsquedas por clave natural ==========
+
+    /** Busca un cliente por su documento, sin distinguir mayúsculas. */
+    public Optional<Cliente> buscarClientePorDocumento(String documento) {
+        if (documento == null || documento.isBlank()) {
+            return Optional.empty();
+        }
+
+        String clave = documento.trim();
+        return clientes.stream()
+                .filter(cliente -> cliente.getDocumento().equalsIgnoreCase(clave))
+                .findFirst();
+    }
+
+    /** Busca un vehículo por su placa, sin distinguir mayúsculas. */
+    public Optional<Vehiculo> buscarVehiculoPorPlaca(String placa) {
+        if (placa == null || placa.isBlank()) {
+            return Optional.empty();
+        }
+
+        String clave = placa.trim();
+        return vehiculos.stream()
+                .filter(vehiculo -> vehiculo.getPlaca().equalsIgnoreCase(clave))
+                .findFirst();
+    }
+
+    /** Busca una orden de trabajo por su identificador. */
+    public Optional<OrdenTrabajo> buscarOrden(String id) {
+        if (id == null || id.isBlank()) {
+            return Optional.empty();
+        }
+
+        String clave = id.trim();
+        return ordenes.stream()
+                .filter(orden -> orden.getId().equalsIgnoreCase(clave))
+                .findFirst();
     }
 }
