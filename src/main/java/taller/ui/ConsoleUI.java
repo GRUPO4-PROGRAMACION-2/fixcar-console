@@ -44,8 +44,6 @@ public class ConsoleUI {
 
     /** Ciclo principal: se repite hasta que el usuario elige 0 (Salir). */
     public void iniciar() {
-        System.out.println("=== FixCar - Sistema del taller ===");
-
         boolean continuar = true;
         while (continuar) {
             mostrarMenu();
@@ -64,6 +62,8 @@ public class ConsoleUI {
     }
 
     private void mostrarMenu() {
+        limpiarPantalla();
+        System.out.println("=== FixCar - Sistema del taller ===");
         System.out.println();
         System.out.println("---------------- Menú Principal ----------------");
         System.out.println("1. Registrar cliente");
@@ -103,6 +103,8 @@ public class ConsoleUI {
             // Cualquier otro error: lo mostramos, pero el menú sigue funcionando.
             System.out.println("Ocurrió un error inesperado: " + e.getMessage());
         }
+        // Pausa para que el usuario lea el resultado antes de volver al menú.
+        pausar();
         return true;
     }
 
@@ -434,6 +436,27 @@ public class ConsoleUI {
             }
             System.out.println("Responda s o n.");
         }
+    }
+
+    /**
+     * Pausa hasta que el usuario presiona Enter, para que alcance a leer
+     * el resultado de la operación antes de que se muestre el menú de nuevo.
+     */
+    private void pausar() {
+        System.out.println();
+        System.out.print("Presione Enter para continuar...");
+        try {
+            scanner.nextLine();
+        } catch (NoSuchElementException e) {
+            // Entrada cerrada: se sigue y el ciclo principal terminará solo.
+            System.out.println();
+        }
+    }
+
+    /** Limpia la pantalla para que solo se vea un menú a la vez. */
+    private void limpiarPantalla() {
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
     }
 
     private String formatearDinero(double cantidad) {
