@@ -38,8 +38,8 @@ public class ConsoleUI {
         this.controller = controller;
         this.scanner = scanner;
         this.trabajadores = List.of(
-                new Trabajador("Ana López", "T-001", "7000-0001", "Mecánica", "Motor"),
-                new Trabajador("Carlos Pérez", "T-002", "7000-0002", "Mecánico", "Electricidad automotriz"));
+                new Trabajador("Elisa", "T-001", "7000-0001", "Mecánica", "Motor"),
+                new Trabajador("Dilan", "T-002", "7000-0002", "Mecánico", "Electricidad automotriz"));
     }
 
     /** Ciclo principal: se repite hasta que el usuario elige 0 (Salir). */
