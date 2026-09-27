@@ -18,21 +18,20 @@ import taller.ui.ConsoleUI;
 public class Main {
 
     public static void main(String[] args) {
-        // Constructores propuestos: confirmar las firmas con T06, T07, T08 y T09.
         TallerDAO dao = new TallerDAO();
         TallerService service = new TallerService(dao);
         ProcesadorOrdenes procesador = new ProcesadorOrdenes(service);
-        TallerController controller = new TallerController(service, procesador);
 
         Scanner scanner = new Scanner(System.in, charsetDeConsola());
 
-        try {
+        // try-with-resources: al terminar el bloque, Java llama automáticamente
+        // a controller.close(), que cierra los hilos del procesador,
+        // incluso si ocurre un error.
+        try (TallerController controller = new TallerController(service, procesador)) {
             new ConsoleUI(controller, scanner).iniciar();
-        } finally {
-            // finally se ejecuta aunque ocurra un error,
-            // así los hilos siempre se cierran y el programa termina limpio.
-            procesador.cerrar();
+            System.out.println("Esperando a que terminen los diagnósticos pendientes...");
         }
+        System.out.println("Sistema cerrado correctamente.");
     }
 
     /**
