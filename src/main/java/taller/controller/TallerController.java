@@ -1,5 +1,7 @@
 package taller.controller;
 
+import taller.dto.ResultadoDiagnostico;
+import taller.dto.ResumenLoteDTO;
 import taller.model.*;
 import taller.service.ProcesadorOrdenes;
 import taller.service.TallerService;
@@ -57,6 +59,10 @@ public class TallerController implements AutoCloseable{
         return tallerService.listarVehiculos();
     }
 
+    public List<Trabajador> listarTrabajadores() {
+        return tallerService.listarTrabajadores();
+    }
+
     public List<OrdenTrabajo> listarOrdenes() {
         return tallerService.listarOrdenes();
     }
@@ -65,8 +71,16 @@ public class TallerController implements AutoCloseable{
         tallerService.cambiarEstadoOrden(idOrden, nuevoEstado);
     }
 
-    public Future<?> encolarDiagnostico(String idOrden, EstadoOrden nuevoEstado){
+    public Future<ResultadoDiagnostico> encolarDiagnostico(String idOrden, EstadoOrden nuevoEstado){
         return procesadorOrdenes.encolarDiagnostico(idOrden, nuevoEstado);
+    }
+
+    public ResumenLoteDTO diagnosticarPendientes(){
+        return procesadorOrdenes.diagnosticarPendientes();
+    }
+
+    public List<ResultadoDiagnostico> retirarNotificaciones(){
+        return procesadorOrdenes.retirarNotificaciones();
     }
 
     @Override
