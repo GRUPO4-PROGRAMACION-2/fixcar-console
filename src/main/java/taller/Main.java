@@ -4,8 +4,13 @@ import java.io.Console;
 import java.nio.charset.Charset;
 import java.util.Scanner;
 
+import taller.config.DataSourceConfig;
 import taller.controller.TallerController;
-import taller.dao.TallerDAO;
+import taller.dao.jdbc.JdbcClienteDAO;
+import taller.dao.jdbc.JdbcOrdenDAO;
+import taller.dao.jdbc.JdbcTrabajadorDAO;
+import taller.dao.jdbc.JdbcVehiculoDAO;
+import taller.exception.TallerException;
 import taller.service.ProcesadorOrdenes;
 import taller.service.TallerService;
 import taller.ui.ConsoleUI;
@@ -13,23 +18,35 @@ import taller.ui.ConsoleUI;
 /**
  * Punto de arranque (T10).
  * Crea las capas de abajo hacia arriba, inicia la consola
- * y al salir cierra los hilos del procesador.
+ * y al salir cierra los hilos del procesador y el pool de conexiones.
  */
 public class Main {
 
     public static void main(String[] args) {
-        TallerDAO dao = new TallerDAO();
-        TallerService service = new TallerService(dao);
-        ProcesadorOrdenes procesador = new ProcesadorOrdenes(service);
+        org.apache.tomcat.jdbc.pool.DataSource dataSource = DataSourceConfig.crear();
+        try {
+            DataSourceConfig.inicializarBaseDeDatos(dataSource);
 
-        Scanner scanner = new Scanner(System.in, charsetDeConsola());
+            TallerService service = new TallerService(
+                    new JdbcClienteDAO(dataSource),
+                    new JdbcVehiculoDAO(dataSource),
+                    new JdbcTrabajadorDAO(dataSource),
+                    new JdbcOrdenDAO(dataSource));
+            ProcesadorOrdenes procesador = new ProcesadorOrdenes(service);
 
-        // try-with-resources: al terminar el bloque, Java llama automáticamente
-        // a controller.close(), que cierra los hilos del procesador,
-        // incluso si ocurre un error.
-        try (TallerController controller = new TallerController(service, procesador)) {
-            new ConsoleUI(controller, scanner).iniciar();
-            System.out.println("Esperando a que terminen los diagnósticos pendientes...");
+            Scanner scanner = new Scanner(System.in, charsetDeConsola());
+
+            // try-with-resources: al terminar el bloque, Java llama automáticamente
+            // a controller.close(), que cierra los hilos del procesador,
+            // incluso si ocurre un error.
+            try (TallerController controller = new TallerController(service, procesador)) {
+                new ConsoleUI(controller, scanner).iniciar();
+                System.out.println("Esperando a que terminen los diagnósticos pendientes...");
+            }
+        } catch (TallerException e) {
+            System.err.println("No se pudo iniciar el sistema: " + e.getMessage());
+        } finally {
+            dataSource.close();
         }
         System.out.println("Sistema cerrado correctamente.");
     }

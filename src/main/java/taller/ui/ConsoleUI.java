@@ -6,6 +6,9 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import taller.controller.TallerController;
+import taller.dto.ResultadoDiagnostico;
+import taller.dto.ResumenLoteDTO;
+import taller.exception.TallerException;
 import taller.model.Cliente;
 import taller.model.EstadoOrden;
 import taller.model.Mantenimiento;
@@ -30,16 +33,9 @@ public class ConsoleUI {
     private final TallerController controller;
     private final Scanner scanner;
 
-    // El sistema todavía no guarda trabajadores (TallerData no tiene una lista para ellos),
-    // así que la consola usa esta plantilla fija. Pendiente de acordar con el equipo.
-    private final List<Trabajador> trabajadores;
-
     public ConsoleUI(TallerController controller, Scanner scanner) {
         this.controller = controller;
         this.scanner = scanner;
-        this.trabajadores = List.of(
-                new Trabajador("Elisa", "T-001", "7000-0001", "Mecánica", "Motor"),
-                new Trabajador("Dilan", "T-002", "7000-0002", "Mecánico", "Electricidad automotriz"));
     }
 
     /** Ciclo principal: se repite hasta que el usuario elige 0 (Salir). */
@@ -47,8 +43,9 @@ public class ConsoleUI {
         boolean continuar = true;
         while (continuar) {
             mostrarMenu();
+            mostrarNotificaciones();
             try {
-                int opcion = leerEntero("Elija una opción: ", 0, 7);
+                int opcion = leerEntero("Elija una opción: ", 0, 8);
                 continuar = ejecutarOpcion(opcion);
             } catch (NoSuchElementException e) {
                 // La entrada se cerró (por ejemplo, Ctrl+Z y Enter en Windows).
@@ -73,6 +70,7 @@ public class ConsoleUI {
         System.out.println("5. Cambiar estado de una orden");
         System.out.println("6. Enviar orden a diagnóstico");
         System.out.println("7. Listar clientes y vehículos");
+        System.out.println("8. Diagnosticar todas las pendientes");
         System.out.println("0. Salir");
         System.out.println("------------------------------------------------");
     }
@@ -95,8 +93,9 @@ public class ConsoleUI {
                 case 5 -> cambiarEstado();
                 case 6 -> enviarADiagnostico();
                 case 7 -> listarClientesYVehiculos();
+                case 8 -> diagnosticarPendientes();
             }
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (TallerException | IllegalArgumentException | IllegalStateException e) {
             // Errores esperados: datos que el modelo o el servicio rechazaron.
             System.out.println("No se pudo completar la operación: " + e.getMessage());
         } catch (RuntimeException e) {
@@ -246,6 +245,31 @@ public class ConsoleUI {
         }
     }
 
+    private void mostrarNotificaciones() {
+        for (ResultadoDiagnostico r : controller.retirarNotificaciones()) {
+            System.out.println((r.exitoso() ? "[OK] " : "[FALLÓ] ") + "Diagnóstico de " + r.idOrden()
+                    + ": " + r.mensaje());
+        }
+    }
+
+    private void diagnosticarPendientes() {
+        System.out.println("\n-- Diagnosticar todas las pendientes --");
+        System.out.println("Procesando en paralelo, espere...");
+        ResumenLoteDTO resumen = controller.diagnosticarPendientes();
+
+        if (resumen.total() == 0) {
+            System.out.println("No hay órdenes pendientes.");
+            return;
+        }
+        for (ResultadoDiagnostico r : resumen.detalle()) {
+            System.out.println((r.exitoso() ? "[OK] " : "[FALLÓ] ") + r.idOrden() + " - " + r.mensaje()
+                    + " (" + r.duracionMs() + " ms, " + r.hilo() + ")");
+        }
+        System.out.println("Órdenes: " + resumen.total() + " | correctas: " + resumen.exitosos()
+                + " | fallidas: " + resumen.fallidos());
+        System.out.println("Tiempo total: " + resumen.duracionMs() + " ms con " + resumen.hilos() + " hilos");
+    }
+
     // ===================== Búsquedas en las listas del controller =====================
 
     /** Devuelve el cliente con ese documento, o null si no existe. */
@@ -313,6 +337,7 @@ public class ConsoleUI {
     // ===================== Selecciones =====================
 
     private Trabajador elegirTrabajador() {
+        List<Trabajador> trabajadores = controller.listarTrabajadores();
         System.out.println("Trabajadores disponibles:");
         for (int i = 0; i < trabajadores.size(); i++) {
             Trabajador t = trabajadores.get(i);
