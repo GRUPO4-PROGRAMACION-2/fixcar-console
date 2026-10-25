@@ -2,38 +2,62 @@ package taller.service;
 
 import java.util.List;
 
-import taller.dao.TallerDAO;
-import taller.dao.TallerData;
+import taller.dao.ClienteDAO;
+import taller.dao.OrdenDAO;
+import taller.dao.TrabajadorDAO;
+import taller.dao.VehiculoDAO;
+import taller.exception.ConcurrenciaException;
+import taller.exception.EntidadDuplicadaException;
+import taller.exception.EntidadNoEncontradaException;
+import taller.exception.TransicionEstadoInvalidaException;
 import taller.model.Cliente;
 import taller.model.EstadoOrden;
 import taller.model.OrdenTrabajo;
+import taller.model.Trabajador;
 import taller.model.Vehiculo;
 
 public class TallerService {
 
-    private final TallerDAO tallerDAO;
+    private final ClienteDAO clienteDAO;
+    private final VehiculoDAO vehiculoDAO;
+    private final TrabajadorDAO trabajadorDAO;
+    private final OrdenDAO ordenDAO;
 
-    public TallerService(TallerDAO tallerDAO) {
-        if (tallerDAO == null) {
-            throw new IllegalArgumentException("El DAO no puede ser nulo.");
+    public TallerService(ClienteDAO clienteDAO, VehiculoDAO vehiculoDAO,
+                         TrabajadorDAO trabajadorDAO, OrdenDAO ordenDAO) {
+        if (clienteDAO == null || vehiculoDAO == null || trabajadorDAO == null || ordenDAO == null) {
+            throw new IllegalArgumentException("Los DAO no pueden ser nulos.");
         }
-        this.tallerDAO = tallerDAO;
+        this.clienteDAO = clienteDAO;
+        this.vehiculoDAO = vehiculoDAO;
+        this.trabajadorDAO = trabajadorDAO;
+        this.ordenDAO = ordenDAO;
     }
 
-    //registro de clientes y vehuculos
+    //registro de clientes y vehiculos
 
     public void registrarCliente(Cliente cliente) {
         if (cliente == null) {
             throw new IllegalArgumentException("El cliente no puede ser nulo.");
         }
-        tallerDAO.actualizarDatos(datos -> datos.agregarCliente(cliente));
+        if (clienteDAO.existe(cliente.getDocumento())) {
+            throw new EntidadDuplicadaException("cliente", cliente.getDocumento());
+        }
+        clienteDAO.guardar(cliente);
     }
 
     public void registrarVehiculo(Vehiculo vehiculo) {
         if (vehiculo == null) {
             throw new IllegalArgumentException("El vehículo no puede ser nulo.");
         }
-        tallerDAO.actualizarDatos(datos -> datos.agregarVehiculo(vehiculo));
+        String dueno = vehiculo.getCliente().getDocumento();
+        if (!clienteDAO.existe(dueno)) {
+            throw new EntidadNoEncontradaException("cliente", dueno);
+        }
+        if (vehiculoDAO.existe(vehiculo.getPlaca())) {
+            throw new EntidadDuplicadaException("vehículo", vehiculo.getPlaca());
+        }
+        vehiculoDAO.guardar(vehiculo);
     }
 
     //gestión de órdenes de trabajo
@@ -42,24 +66,41 @@ public class TallerService {
         if (orden == null) {
             throw new IllegalArgumentException("La orden de trabajo no puede ser nula.");
         }
-        tallerDAO.actualizarDatos(datos -> datos.agregarOrden(orden));
+        if (ordenDAO.existe(orden.getId())) {
+            throw new EntidadDuplicadaException("orden", orden.getId());
+        }
+        Vehiculo vehiculo = vehiculoDAO.buscarPorId(orden.getVehiculo().getPlaca())
+                .orElseThrow(() -> new EntidadNoEncontradaException("vehículo", orden.getVehiculo().getPlaca()));
+        if (!vehiculo.getCliente().getDocumento().equals(orden.getCliente().getDocumento())) {
+            throw new IllegalArgumentException("El vehículo " + vehiculo.getPlaca() + " no pertenece al cliente de la orden.");
+        }
+        if (!trabajadorDAO.existe(orden.getTrabajador().getDocumento())) {
+            throw new EntidadNoEncontradaException("trabajador", orden.getTrabajador().getDocumento());
+        }
+        ordenDAO.guardar(orden);
     }
 
     public List<OrdenTrabajo> listarOrdenes() {
-        TallerData datos = tallerDAO.cargar();
-        return datos.consultarOrdenes();
+        return ordenDAO.listarTodos();
+    }
+
+    public List<OrdenTrabajo> listarOrdenesPendientes() {
+        return ordenDAO.listarPorEstado(EstadoOrden.PENDIENTE);
     }
 
     public List<Cliente> listarClientes() {
-        TallerData datos = tallerDAO.cargar();
-        return datos.consultarClientes();
+        return clienteDAO.listarTodos();
     }
 
     public List<Vehiculo> listarVehiculos() {
-        TallerData datos = tallerDAO.cargar();
-        return datos.consultarVehiculos();
+        return vehiculoDAO.listarTodos();
     }
 
+    public List<Trabajador> listarTrabajadores() {
+        return trabajadorDAO.listarTodos();
+    }
+
+    // si otro hilo cambio la orden antes, lanza ConcurrenciaException
     public void cambiarEstadoOrden(String idOrden, EstadoOrden nuevoEstado) {
         if (idOrden == null || idOrden.isBlank()) {
             throw new IllegalArgumentException("El ID de la orden es obligatorio.");
@@ -68,22 +109,22 @@ public class TallerService {
             throw new IllegalArgumentException("El nuevo estado no puede ser nulo.");
         }
 
-        String idNormalizado = idOrden.trim();
-        tallerDAO.actualizarDatos(datos -> {
-            OrdenTrabajo ordenEncontrada = datos.getOrdenes().stream()
-                    .filter(orden -> orden.getId().equals(idNormalizado))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "No se encontró la orden con ID: " + idOrden));
+        String id = idOrden.trim();
+        OrdenTrabajo orden = ordenDAO.buscarPorId(id)
+                .orElseThrow(() -> new EntidadNoEncontradaException("orden", id));
 
-            ordenEncontrada.cambiarEstado(nuevoEstado);
-        });
+        EstadoOrden actual = orden.getEstado();
+        if (!actual.puedeCambiarA(nuevoEstado)) {
+            throw new TransicionEstadoInvalidaException(actual, nuevoEstado);
+        }
+        if (!ordenDAO.actualizarEstado(id, actual, nuevoEstado)) {
+            throw new ConcurrenciaException(id);
+        }
     }
 
-    //MÉTODO ACORDADO CON T10 (Procesar Diagnóstico) 
+    //MÉTODO ACORDADO CON T10 (Procesar Diagnóstico)
 
     public void procesarDiagnostico(String idOrden, EstadoOrden nuevoEstado) {
-        // Método expuesto para que T10 o el Controller procese el diagnóstico de la orden
         cambiarEstadoOrden(idOrden, nuevoEstado);
     }
 }
