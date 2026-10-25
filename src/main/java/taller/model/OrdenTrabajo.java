@@ -20,6 +20,12 @@ public class OrdenTrabajo implements Serializable {
     private LocalDateTime fechaCreacion;
 
     public OrdenTrabajo(String id, String descripcion, Cliente cliente, Vehiculo vehiculo, Trabajador trabajador) {
+        this(id, descripcion, cliente, vehiculo, trabajador, EstadoOrden.PENDIENTE, LocalDateTime.now());
+    }
+
+    // lo usa el DAO para armar la orden desde la BD
+    public OrdenTrabajo(String id, String descripcion, Cliente cliente, Vehiculo vehiculo, Trabajador trabajador,
+                        EstadoOrden estado, LocalDateTime fechaCreacion) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("El id de la orden no puede estar vacío");
         }
@@ -41,8 +47,8 @@ public class OrdenTrabajo implements Serializable {
         this.vehiculo = vehiculo;
         this.trabajador = trabajador;
         this.servicios = new ArrayList<>();
-        this.estado = EstadoOrden.PENDIENTE;
-        this.fechaCreacion = LocalDateTime.now();
+        this.estado = estado;
+        this.fechaCreacion = fechaCreacion;
     }
 
     public void agregarServicio(Servicio servicio) {

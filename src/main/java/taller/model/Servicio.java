@@ -37,6 +37,12 @@ public abstract class Servicio implements Serializable {
      */
     public abstract double calcularCosto();
 
+    public abstract String getTipo();
+
+    public double getCostoManoObra() {
+        return 0;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + ": " + nombre

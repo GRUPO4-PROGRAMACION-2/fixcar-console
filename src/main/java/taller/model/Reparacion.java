@@ -22,6 +22,11 @@ public class Reparacion extends Servicio {
     }
 
     @Override
+    public String getTipo() {
+        return "REPARACION";
+    }
+
+    @Override
     public double calcularCosto() {
         return getPrecioBase() + getCostoManoObra();
     }
