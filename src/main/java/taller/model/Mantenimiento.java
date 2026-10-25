@@ -12,6 +12,11 @@ public class Mantenimiento extends Servicio {
     }
 
     @Override
+    public String getTipo() {
+        return "MANTENIMIENTO";
+    }
+
+    @Override
     public double calcularCosto() {
         return getPrecioBase();
     }
