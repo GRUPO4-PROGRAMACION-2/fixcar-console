@@ -1,5 +1,7 @@
 # Tareas de desarrollo — Taller de consola
 
+> Este índice es del Avance 2 y se deja como historial. En el Avance 3 la persistencia pasó de `taller.dat` a H2 con JDBC; ver el README principal.
+
 Cada integrante toma una tarea, escribe su nombre/usuario de GitHub y cambia el
 estado a `En progreso`. Las tareas están ordenadas por dependencia; no se empieza
 una hasta que las tareas indicadas como requisito estén integradas.
