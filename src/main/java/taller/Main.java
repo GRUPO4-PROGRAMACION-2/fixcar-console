@@ -3,6 +3,8 @@ package taller;
 import java.io.Console;
 import java.nio.charset.Charset;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import taller.config.DataSourceConfig;
 import taller.controller.TallerController;
@@ -23,6 +25,9 @@ import taller.ui.ConsoleUI;
 public class Main {
 
     public static void main(String[] args) {
+        // el pool vuelca la traza completa si no hay base de datos; el usuario solo ve nuestro mensaje
+        Logger.getLogger("org.apache.tomcat.jdbc.pool").setLevel(Level.OFF);
+
         org.apache.tomcat.jdbc.pool.DataSource dataSource = DataSourceConfig.crear();
         try {
             DataSourceConfig.inicializarBaseDeDatos(dataSource);
