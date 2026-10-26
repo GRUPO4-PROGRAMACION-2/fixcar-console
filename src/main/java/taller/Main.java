@@ -25,7 +25,6 @@ import taller.ui.ConsoleUI;
 public class Main {
 
     public static void main(String[] args) {
-        // el pool vuelca la traza completa si no hay base de datos; el usuario solo ve nuestro mensaje
         Logger.getLogger("org.apache.tomcat.jdbc.pool").setLevel(Level.OFF);
 
         org.apache.tomcat.jdbc.pool.DataSource dataSource = DataSourceConfig.crear();
